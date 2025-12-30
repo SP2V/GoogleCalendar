@@ -1,0 +1,141 @@
+.cancel-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.cancel-modal-box {
+    background: white;
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 440px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: zoomIn 0.2s ease-out;
+}
+
+.cancel-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background-color: #ef4444;
+    /* Red-500 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+.cancel-icon-inner {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cancel-modal-title {
+    font-family: 'Kanit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.cancel-modal-message {
+    font-family: 'Kanit', sans-serif;
+    font-size: 1rem;
+    color: #4b5563;
+    margin-bottom: 1.5rem;
+}
+
+.booking-details-box {
+    background-color: #eff6ff;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.booking-detail-text {
+    font-family: 'Kanit', sans-serif;
+    font-size: 0.95rem;
+    color: #374151;
+    line-height: 1.5;
+    margin: 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.cancel-modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-modal-cancel,
+.btn-modal-confirm {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-family: 'Kanit', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-modal-cancel {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.btn-modal-cancel:hover {
+    background-color: #e5e7eb;
+}
+
+.btn-modal-confirm {
+    background-color: #ef4444;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+}
+
+.btn-modal-confirm:hover {
+    background-color: #dc2626;
+    box-shadow: 0 6px 8px -2px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

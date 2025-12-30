@@ -1,0 +1,82 @@
+.tz-success-overlay {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 2000;
+    pointer-events: none;
+    /* Allow clicks through the empty space */
+}
+
+.tz-success-box {
+    background: white;
+    padding: 10px 14px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: auto;
+    min-width: 200px;
+    max-width: 270px;
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+    /* Re-enable clicks on the box itself */
+    border: 1px solid #f3f4f6;
+}
+
+.tz-success-icon-wrapper {
+    width: 30px;
+    height: 30px;
+    background-color: #2563eb;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.tz-success-icon-wrapper svg {
+    color: white;
+    width: 24px;
+    height: 24px;
+}
+
+.tz-success-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: left;
+}
+
+.tz-success-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 2px;
+    font-family: 'Kanit', sans-serif;
+}
+
+.tz-success-subtitle {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-family: 'Kanit', sans-serif;
+    font-weight: 400;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

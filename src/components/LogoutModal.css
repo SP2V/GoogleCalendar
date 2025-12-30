@@ -1,0 +1,108 @@
+.logout-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.logout-modal-box {
+    background: white;
+    width: 360px;
+    max-width: 90%;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    text-align: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.logout-content-wrapper {
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logout-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    background-color: #fef2f2;
+    /* Red-50 */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ef4444;
+    /* Red-500 */
+    margin-bottom: 16px;
+}
+
+.logout-title {
+    font-family: 'Kanit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+}
+
+.logout-description {
+    font-family: 'Kanit', sans-serif;
+    font-size: 0.9rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.logout-actions-row {
+    display: flex;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-logout-action {
+    flex: 1;
+    border: none;
+    background: white;
+    padding: 16px 0;
+    font-family: 'Kanit', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-logout-action.cancel:hover {
+    background-color: #eff6ff;
+}
+
+.btn-logout-action.cancel {
+    color: #2563EB;
+    /* Gray-700 */
+    border-right: 1px solid #e5e7eb;
+}
+
+.btn-logout-action.confirm:hover {
+    background-color: #fef2f2;
+}
+
+.btn-logout-action.confirm {
+    color: #ef4444;
+    /* Red-500 */
+}

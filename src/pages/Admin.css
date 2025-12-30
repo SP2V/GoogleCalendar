@@ -1,0 +1,994 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap'); */
+
+:root {
+  --primary: #3b82f6;
+  /* Blue-500 */
+  --primary-hover: #2563eb;
+  /* Blue-600 */
+  --bg-gradient-start: #f3f4f6;
+  --bg-gradient-end: #e5e7eb;
+  --card-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-sub: #6b7280;
+  --border-color: #e5e7eb;
+  --radius-card: 1rem;
+  --radius-input: 12px;
+  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+}
+
+/* Container */
+.admin-schedule-container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #87d1ff, #88a4ff, #ff88cb);
+  padding: 1rem;
+}
+
+.admin-schedule-wrapper {
+  max-width: 56rem;
+  margin: 0 auto;
+  /* padding: 0.5rem; */
+}
+
+/* Header Card */
+.header-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  /* ไล่สีฟ้า-ม่วง */
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.header-icon .icon {
+  width: 2rem;
+  height: 2rem;
+  color: white;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+.header-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Form Card */
+.form-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #3b82f6;
+}
+
+.form-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Form Group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  display: block;
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.form-label-hint {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Select Wrapper */
+.select-wrapper {
+  position: relative;
+}
+
+.form-select {
+  width: 100%;
+  transition: all 0.2s;
+  appearance: none;
+  cursor: pointer;
+  height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #767676;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-select.has-value {
+  color: #000;
+  /* สีดำเมื่อเลือกแล้ว */
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-select option {
+  color: #000;
+  padding: 4px 6px;
+  font-size: 14px;
+}
+
+.select-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Day Buttons */
+.day-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.day-button {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  cursor: pointer;
+}
+
+.day-button:hover {
+  background: #e5e7eb;
+}
+
+.day-button-active {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+/* Time Grid */
+.time-grid {
+  display: grid;
+  /* แก้จาก repeat(2, 1fr) เป็นแบบด้านล่าง */
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  /* สำคัญ: จัดให้ปุ่มอยู่ชิดล่างเพื่อให้ตรงกับช่อง Input (ไม่ลอยขึ้นไปเสมอ Label) */
+}
+
+/* Submit Button */
+.submit-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.submit-button:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* List Card */
+.list-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+/* List Content Grid */
+.list-content-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 2fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.list-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 1. แก้ไขที่ตัว Card (Container หลัก) */
+.list-column-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  gap: 0.75rem;
+  /* Flexbox Settings */
+  display: flex;
+  flex-direction: column;
+
+  /* กำหนดความสูงตายตัวเพื่อให้กล่องมีขนาดเท่าเดิมตลอด */
+  min-height: 460px;
+  /* (ปรับตัวเลข 600px ได้ตามความสูงหน้าจอที่ต้องการ) */
+
+  /* justify-content: space-between;  <-- ลบบรรทัดนี้ออกครับ! (เพราะจะทำให้เนื้อหาลอยตรงกลางถ้ามี items น้อย) */
+}
+
+/* 2. แก้ไขที่ตัว List (เนื้อหาตรงกลาง) */
+.schedule-list {
+  /* --- ส่วนสำคัญที่เพิ่มเข้ามา --- */
+  flex: 1;
+  /* สั่งให้ขยายกินพื้นที่ว่างทั้งหมด เพื่อดัน Pagination ลงไปล่างสุด */
+  /* ------------------------- */
+  display: flex;
+  flex-direction: column;
+  gap: 0rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  margin-bottom: 0;
+  /* เว้นระยะห่างจาก Pagination เล็กน้อย */
+}
+
+/* 3. แก้ไขที่ตัว Pagination (ส่วนล่างสุด) */
+.pagination-controls {
+  margin-top: auto;
+  /* เสริมความชัวร์ ให้มันดีดตัวลงไปติดขอบล่างสุดเสมอ */
+
+  display: flex;
+  justify-content: center !important;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  gap: 1rem;
+}
+
+.list-column-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.list-row-card {
+  display: flex;
+  flex-direction: row;
+  gap: 6.1rem;
+  /* align-items: start;
+  justify-self: self-end; */
+}
+
+@media (max-width: 768px) {
+  .list-content-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-top: 1.5rem; */
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  gap: 1rem;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.pagination-button:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .pagination-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pagination-button {
+    width: 100%;
+  }
+}
+
+/* Filter Section */
+.filter-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  max-width: 20rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Duration Row */
+.duration-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Add Activity Row */
+.add-activity-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.add-activity-input {
+  flex: 1;
+  height: 40px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.add-activity-input:focus {
+  outline: none;
+  border-color: #3b82f6 !important;
+  /* เส้นขอบสีฟ้าเมื่อคลิก */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  /* เงาฟ้าอ่อน */
+}
+
+.add-activity-btn {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  white-space: nowrap;
+}
+
+.add-activity-btn:hover {
+  background: #2563eb;
+  /* box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); */
+  /* transform: translateY(-1px); */
+}
+
+.add-activity-btn:active {
+  transform: translateY(0);
+}
+
+.add-activity-btn .button-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.add-activity-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  /* box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); */
+  white-space: nowrap;
+}
+
+.add-activity-button:hover {
+  background: #2563eb;
+  /* box-shadow: #3b82f6; */
+  /* transform: translateY(-1px); */
+}
+
+.add-activity-button:active {
+  transform: translateY(0);
+}
+
+.add-activity-button .button-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Results Count */
+.results-count {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Schedule List */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  /* gap: 0.3rem; */
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.schedule-list-add-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 10px;
+  margin-top: -10px;
+}
+
+.input-with-icon-wrapper .add-activity-input {
+  flex: 1;
+  height: 40px;
+  /* width: 120px; */
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.input-with-icon-wrapper .add-activity-btn {
+  flex: 1;
+  height: 40px;
+  /* width: 70px; */
+  padding: 0.75rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  white-space: nowrap;
+}
+
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+/* Date Group */
+.date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Date Separator */
+.date-separator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.date-badge {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.date-line {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* Schedule Items */
+.schedule-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Schedule Item */
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+}
+
+.schedule-item:hover {
+  background: #f3f4f6;
+  transform: translateX(2px);
+}
+
+.schedule-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.schedule-type {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.schedule-time {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0.2rem 0 0 0;
+}
+
+.schedule-day-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0.2rem 0 0 0;
+}
+
+/* Schedule Actions */
+.schedule-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.action-button {
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.45rem;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-edit {
+  background: #ffffff;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+}
+
+.action-edit:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-delete {
+  background: #ffffff;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.action-delete:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Toggle Time Input Button */
+.toggle-time-input-button {
+  width: auto;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-time-input-button:hover {
+  background: #e5e7eb;
+}
+
+.toggle-time-input-button .button-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .list-content-grid {
+    grid-template-columns: 1fr;
+    /* Stack columns on tablet */
+    gap: 1.5rem;
+  }
+
+  .list-column-card {
+    min-height: auto;
+    /* Allow auto height when stacked */
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-schedule-container {
+    padding: 0.5rem;
+  }
+
+  .header-card {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .header-top-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .header-icon {
+    margin: 0 auto;
+    /* Center icon */
+  }
+
+  .day-buttons {
+    flex-wrap: wrap;
+  }
+
+  .day-button {
+    flex: 1 0 calc(33.333% - 0.5rem);
+    min-width: 0;
+  }
+
+  .time-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-select {
+    max-width: 100%;
+  }
+
+  .add-activity-row {
+    flex-direction: column;
+  }
+
+  .add-activity-btn {
+    width: 100%;
+    /* max-width: 100px; Remove fixed max-width for better touch targets */
+    justify-content: center;
+  }
+
+  .list-row-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    /* Allow auto height when stacked */
+  }
+
+  .add-activity-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .schedule-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .schedule-info {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .schedule-actions {
+    width: 100%;
+    margin-top: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .action-button {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Form Content adjustments */
+  .type-inline-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input-with-icon-wrapper {
+    width: 100%;
+  }
+
+  .schedule-list-add-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* =======================
+   INLINE TYPE SELECT ROW (Restored)
+   ======================= */
+.type-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.type-select {
+  flex: 1.2;
+}
+
+.add-activity-inline-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.add-activity-inline-btn:hover {
+  background: #2563eb;
+}
+
+.add-activity-inline-btn:active {
+  transform: scale(0.97);
+}
+
+.add-activity-inline-btn .button-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* Responsive: จอเล็กให้เรียงเป็นบรรทัด */
+@media (max-width: 768px) {
+  .type-inline-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-activity-inline-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Time Input Row */
+.time-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time-text-input {
+  flex: 1;
+  height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #000;
+  background: white;
+  transition: all 0.2s;
+}
+
+.time-text-input::placeholder {
+  color: #9ca3af;
+}
+
+.time-text-input:focus {
+  outline: none;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ให้ dropdown มีขนาดพอดีกับ input */
+.time-dropdown {
+  flex: 1;
+}
+
+/* Header Top Row (เพิ่มแถวบนสุด) */
+.header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ปุ่มสลับโหมด */
+.session-toggle-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.session-toggle-btn:hover {
+  background: #2563eb;
+}
+
+.session-toggle-btn:active {
+  transform: scale(0.97);
+}
+
+/* Container ที่ครอบ Input กับ Icon */
+.input-with-icon-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ซ่อน input type color ตัวจริง */
+.hidden-color-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* จัดตำแหน่ง Icon ให้ลอยอยู่ขวาสุดของช่อง Input */
+.color-picker-container {
+  position: absolute;
+  right: 10px;
+  /* ระยะห่างจากขอบขวา */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.color-icon-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.color-icon-label:hover {
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .header-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .session-toggle-btn {
+    align-self: stretch;
+  }
+}

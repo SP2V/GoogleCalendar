@@ -1,0 +1,247 @@
+.notif-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.notif-modal-container {
+  background-color: white;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 400px;
+  padding: 40px 30px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.notif-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.notif-modal-close:hover {
+  color: #333;
+}
+
+.notif-modal-icon-wrapper {
+  margin-bottom: 20px;
+}
+
+.notif-modal-icon-circle {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #FF8080 0%, #FF6B4A 100%);
+  /* Coral/Orange gradient */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(255, 107, 74, 0.25);
+}
+
+.notif-modal-icon-svg {
+  display: none;
+  /* Hide the simple one if using the inner div one, or vice versa */
+}
+
+.alarm-icon-inner svg {
+  width: 48px;
+  height: 48px;
+  fill: white;
+}
+
+.notif-modal-header {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 12px 0;
+}
+
+.notif-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+  /* Slightly lighter than header */
+  margin: 0 0 16px 0;
+}
+
+.notif-modal-time {
+  font-size: 16px;
+  color: #4B5563;
+  margin: 0;
+}
+
+.notif-modal-time-value {
+  font-weight: 600;
+  color: #1F2937;
+  font-size: 18px;
+  margin-left: 4px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  10% {
+    transform: rotate(-10deg);
+  }
+
+  20% {
+    transform: rotate(10deg);
+  }
+
+  30% {
+    transform: rotate(-10deg);
+  }
+
+  40% {
+    transform: rotate(10deg);
+  }
+
+  50% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.notif-modal-icon-circle svg {
+  animation: shake 1s ease-in-out infinite;
+}
+
+/* Slider Styles */
+.slider-container {
+  width: 100%;
+  height: 50px;
+  background-color: rgba(0, 0, 0, 0.05);
+  /* Light gray track */
+  border-radius: 25px;
+  position: relative;
+  margin-top: 30px;
+  overflow: hidden;
+  /* Keep knob inside visually if needed, but we handle clamping in JS */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.slider-track-text {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  color: #9CA3AF;
+  font-size: 16px;
+  font-weight: 500;
+  pointer-events: none;
+  /* Let clicks pass through */
+  animation: shimmer 2s infinite;
+  background: linear-gradient(to right, #9CA3AF 0%, #4B5563 50%, #9CA3AF 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
+.slider-knob {
+  width: 44px;
+  /* Slightly smaller than height */
+  height: 44px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  left: 3px;
+  /* Padding */
+  top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  z-index: 10;
+}
+
+.slider-knob:active {
+  cursor: grabbing;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.slider-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #4ADE80 0%, #22C55E 100%);
+  /* Smoother Green Gradient */
+  border-radius: 25px;
+  z-index: 1;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Bouncy smooth snap */
+}
+
+.slider-fill.dragging {
+  transition: none !important;
+  /* Instant response during drag */
+}
+
+/* Ensure knob is above fill */
+.slider-knob {
+  z-index: 10;
+}
+
+/* Ensure text is above fill (or below? usually below fill or hidden) */
+/* I added inline opacity to text in JSX, so it fades out. */
+.slider-track-text {
+  z-index: 5;
+}

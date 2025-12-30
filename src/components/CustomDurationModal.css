@@ -1,0 +1,126 @@
+.custom-duration-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+    /* Higher than preview modal if needed, though they shouldn't overlap */
+    font-family: 'Prompt', sans-serif;
+}
+
+.custom-duration-modal-container {
+    background-color: #fff;
+    width: 380px;
+    max-width: 90%;
+    border-radius: 16px;
+    padding: 30px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    animation: zoomIn 0.2s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.duration-modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 25px;
+}
+
+.duration-input-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.duration-input {
+    flex: 2;
+    padding: 10px 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: 'Prompt', sans-serif;
+}
+
+.duration-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.duration-select {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: #fff;
+    outline: none;
+    font-family: 'Prompt', sans-serif;
+    cursor: pointer;
+}
+
+.duration-select:focus {
+    border-color: #3b82f6;
+}
+
+.duration-modal-footer {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+.btn-duration-cancel {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    color: #374151;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-duration-cancel:hover {
+    background-color: #f9fafb;
+}
+
+.btn-duration-confirm {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background-color: #3b82f6;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-duration-confirm:hover {
+    background-color: #2563eb;
+}

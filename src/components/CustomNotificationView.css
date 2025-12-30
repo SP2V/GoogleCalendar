@@ -1,0 +1,370 @@
+.cn-container {
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    min-height: 600px;
+    /* Match height of other views if needed */
+    display: flex;
+    flex-direction: column;
+}
+
+.cn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    /* Border bottom optional, image doesn't show clearly but often good for separation */
+    /* border-bottom: 1px solid #e5e7eb; */
+    /* padding-bottom: 16px; */
+}
+
+.cn-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cn-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+    font-family: 'Kanit', sans-serif;
+}
+
+.cn-add-btn {
+    width: 70px;
+    height: 45px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+}
+
+.cn-add-btn:hover {
+    background-color: #1d4ed8;
+    transform: scale(1.05);
+}
+
+.cn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+    padding-bottom: 20px;
+}
+
+.cn-card {
+    background: #f8f9fa;
+    border-radius: 20px;
+    /* Slightly reduced radius for sleekness */
+    border: 1px solid #f3f4f6;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    /* Stack header and meta rows */
+    gap: 12px;
+    transition: box-shadow 0.2s;
+}
+
+.cn-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #e5e7eb;
+}
+
+.cn-card-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.9rem;
+}
+
+.cn-content {
+    /* Removed or reset if not needed */
+    flex: 1;
+}
+
+.cn-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    /* Dark text */
+    margin: 0;
+    font-family: 'Kanit', sans-serif;
+}
+
+/* Header actions container */
+.cn-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Toggle Switch Styles */
+.cn-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.cn-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cn-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.cn-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.cn-slider {
+    background-color: #2563eb;
+}
+
+input:focus+.cn-slider {
+    box-shadow: 0 0 1px #2563eb;
+}
+
+input:checked+.cn-slider:before {
+    -webkit-transform: translateX(20px);
+    -ms-transform: translateX(20px);
+    transform: translateX(20px);
+}
+
+/* Meta Row Styles */
+.cn-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    /* Reduced gap slightly */
+    flex-wrap: wrap;
+}
+
+.cn-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    /* Slightly smaller text */
+    color: #6b7280;
+    font-family: 'Kanit', sans-serif;
+    font-weight: 400;
+}
+
+.cn-icon {
+    width: 16px;
+    /* Smaller icon size */
+    height: 16px;
+    color: #111827;
+    /* Dark icon color */
+    stroke-width: 2.2px;
+}
+
+.cn-actions {
+    /* No longer main container for right side */
+    display: none;
+    /* Logic moved to header-actions */
+}
+
+.cn-menu-btn {
+    background: none;
+    border: none;
+    color: #1f2937;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.cn-menu-btn:hover {
+    background-color: #e5e7eb;
+}
+
+/* Pagination Footer */
+.cn-footer {
+    margin-top: auto;
+    padding-top: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f3f4f6;
+    /* Optional separator */
+}
+
+.cn-footer-text {
+    font-size: 0.9rem;
+    color: #9ca3af;
+    font-family: 'Kanit', sans-serif;
+}
+
+.cn-pagination {
+    display: flex;
+    gap: 8px;
+}
+
+.cn-page-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    color: #374151;
+    cursor: pointer;
+    font-family: 'Kanit', sans-serif;
+    transition: all 0.2s;
+}
+
+.cn-page-btn.active {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #2563eb;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.cn-page-btn:hover:not(.active):not(:disabled) {
+    background-color: #f9fafb;
+    color: #2563eb;
+}
+
+.cn-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f3f4f6;
+}
+
+/* Tab Switcher Styles */
+.cn-tab-container {
+    padding: 0 4px 16px;
+    display: flex;
+    /* gap: 8px; */
+    justify-content: flex-start;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 16px;
+}
+
+.cn-tab-switcher {
+    position: relative;
+    display: flex;
+    background-color: #ffffff;
+    padding: 5px 3px;
+    border-radius: 25px;
+    border: 1px solid #e5e7eb;
+}
+
+.cn-tab-btn {
+    position: relative;
+    z-index: 2;
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.3s;
+    font-family: 'Kanit', sans-serif;
+    outline: none;
+    min-width: 90px;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-tab-btn:hover {
+    color: #3b82f6;
+    background: transparent;
+}
+
+.cn-tab-btn.active {
+    color: white;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* Glider (The sliding background) */
+.cn-tab-glider {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    background-color: #3b82f6;
+    border-radius: 20px;
+    z-index: 1;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.cn-tab-glider.one-time {
+    transform: translateX(0);
+    width: 90px;
+    /* Adjust based on button width */
+}
+
+.cn-tab-glider.repeating {
+    transform: translateX(90px);
+    /* Adjust based on button width */
+    width: 97px;
+}
+
+@media (max-width: 768px) {
+    .cn-tab-container {
+        flex-direction: column;
+    }
+    
+    .cn-tab-btn {
+        min-width: 60px;
+    }
+
+    .cn-footer {
+        flex-direction: column;
+    }
+
+    .cn-footer-text {
+        margin-bottom: 1rem;
+    }
+}

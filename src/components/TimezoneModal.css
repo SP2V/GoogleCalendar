@@ -1,0 +1,225 @@
+.timezone-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.timezone-modal-box {
+    background: white;
+    width: 480px;
+    /* Slightly wider for the card layout */
+    max-width: 90%;
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 32px;
+    animation: fadeIn 0.2s ease-out;
+    font-family: 'Kanit', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: relative;
+    /* Ensure relative positioning for absolute children */
+}
+
+.timezone-close-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timezone-close-btn:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+/* Header */
+.timezone-header-redesign {
+    text-align: left;
+}
+
+.timezone-title-main {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 8px;
+}
+
+.timezone-subtitle {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+/* Selection Card */
+.timezone-selection-card {
+    background-color: #f8fafc;
+    /* Light gray/blue tint */
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+    /* For dropdown positioning */
+}
+
+.timezone-selection-card:hover {
+    background-color: #f1f5f9;
+}
+
+.timezone-icon-box {
+    width: 40px;
+    height: 40px;
+    background-color: #2563eb;
+    /* Blue */
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    color: white;
+}
+
+.timezone-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Critical for truncation in flex items */
+}
+
+.timezone-info-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.timezone-info-value {
+    font-size: 0.9rem;
+    color: #4b5563;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.timezone-chevron {
+    color: #111827;
+}
+
+/* Custom Dropdown List overlapping */
+.timezone-dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-top: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 50;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.timezone-dropdown-item {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+.timezone-dropdown-item:hover {
+    background-color: #f3f4f6;
+}
+
+.timezone-dropdown-item.active {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+/* Action Button */
+.timezone-action-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.timezone-action-btn:hover {
+    background-color: #1d4ed8;
+}
+
+/* Warning Box */
+.timezone-warning-box {
+    background-color: #fefce8;
+    /* Yellow/Orange tint */
+    border: 1px solid #fde047;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.timezone-warning-icon {
+    color: #d97706;
+    /* Dark orange */
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.timezone-warning-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.timezone-warning-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #92400e;
+}
+
+.timezone-warning-desc {
+    font-size: 0.8rem;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
