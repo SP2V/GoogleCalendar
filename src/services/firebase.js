@@ -15,15 +15,6 @@ import {
 } from 'firebase/firestore';
 
 // --- Firebase Config ---
-// const firebaseConfig = {
-//   apiKey: "AIzaSy...",
-//   authDomain: "...",
-//   projectId: "...",
-//   storageBucket: "...",
-//   messagingSenderId: "...",
-//   appId: "..."
-// };
-
 const firebaseConfig = {
   apiKey: "AIzaSy...",
   authDomain: "...",
