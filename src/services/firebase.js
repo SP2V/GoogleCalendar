@@ -16,12 +16,13 @@ import {
 
 // --- Firebase Config ---
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "...",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
+  apiKey: "AIzaSyAgPHO5zCYVNVeo5ieppd7gtCtuEma0SJo",
+  authDomain: "ideatrade-calendar.firebaseapp.com",
+  projectId: "ideatrade-calendar",
+  storageBucket: "ideatrade-calendar.firebasestorage.app",
+  messagingSenderId: "235738180590",
+  appId: "1:235738180590:web:37424ebe531aabf5453cff",
+  measurementId: "G-MMVFPQR01R"
 };
 
 // --- Initialize ---

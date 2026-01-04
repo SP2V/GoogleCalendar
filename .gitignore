@@ -22,4 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+<<<<<<< HEAD
 serviceAccountKey.json 
+=======
+>>>>>>> abb7bf5 (edit vite.config.js)

@@ -23,7 +23,7 @@ app.use(express.json());
 
 // --- 1. Initialize Firebase Admin ---
 // Try to find serviceAccountKey.json in the root directory
-const serviceAccountPath = path.join(__dirname, '{/*serviceAccountKey.json*/}');
+const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
 
 try {
     if (fs.existsSync(serviceAccountPath)) {

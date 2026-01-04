@@ -1,5 +1,9 @@
 {
   "projects": {
+<<<<<<< HEAD
     "default": "{/*projectId*/}"
+=======
+    "default": "calendar-c8858"
+>>>>>>> abb7bf5 (edit vite.config.js)
   }
 }
