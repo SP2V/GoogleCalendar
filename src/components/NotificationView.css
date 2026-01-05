@@ -247,7 +247,11 @@
     }
 
     .nv-header-row .nv-item-title {
+        max-width: 180px;
         margin-bottom: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .nv-header-row .nv-timestamp {
