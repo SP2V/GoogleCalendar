@@ -2,13 +2,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: "",
-    measurementId: ""
+    apiKey: "AIzaSyD3Dl_a7fxcRJXA96Gj6wDbdw7EwayrwAg",
+    authDomain: "calendar-41ed2.firebaseapp.com",
+    projectId: "calendar-41ed2",
+    storageBucket: "calendar-41ed2.firebasestorage.app",
+    messagingSenderId: "436853070689",
+    appId: "1:436853070689:web:4be59dfe61c600565ac320",
+    measurementId: "G-LNFVTEEZJR"
 });
 
 const messaging = firebase.messaging();

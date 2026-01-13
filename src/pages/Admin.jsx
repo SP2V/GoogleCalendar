@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Admin.css';
 import TimeDropdown from "../components/AdminDropdown";
 import PopupModal from "../components/PopupModal";
@@ -11,8 +11,15 @@ import {
   subscribeActivityTypes,
   addActivityType,
   updateActivityType,
-  deleteActivityType
+  deleteActivityType,
+  subscribeBookings,   // Import for Sync
+  updateBookingDoc,    // Import for Sync
+  auth
 } from '../services/firebase';
+import { createCalendarEvent } from '../services/calendarService'; // Import Calendar Service
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { History, LogOut, AlarmClock } from 'lucide-react';
+import { TbTimezone } from "react-icons/tb";
 
 
 // --------------------------- ICONS ---------------------------
@@ -61,6 +68,61 @@ const timeToMinutes = (timeStr) => {
   return h * 60 + m;
 };
 
+// Helper: Match Hex to Google Color ID
+const mapHexToGoogleColorId = (hex) => {
+  if (!hex) return '7'; // Default Peacock (Blue)
+
+  // Google Calendar Colors
+  const colors = {
+    1: '#7986cb', // Lavender
+    2: '#33b679', // Sage
+    3: '#8e24aa', // Grape
+    4: '#e67c73', // Flamingo
+    5: '#f6c026', // Banana
+    6: '#f5511d', // Tangerine
+    7: '#039be5', // Peacock
+    8: '#616161', // Graphite
+    9: '#3f51b5', // Blueberry
+    10: '#0b8043', // Basil
+    11: '#d50000'  // Tomato
+  };
+
+  const hexToRgb = (h) => {
+    let r = 0, g = 0, b = 0;
+    // 3 digits
+    if (h.length === 4) {
+      r = parseInt("0x" + h[1] + h[1]);
+      g = parseInt("0x" + h[2] + h[2]);
+      b = parseInt("0x" + h[3] + h[3]);
+    } else if (h.length === 7) {
+      r = parseInt("0x" + h[1] + h[2]);
+      g = parseInt("0x" + h[3] + h[4]);
+      b = parseInt("0x" + h[5] + h[6]);
+    }
+    return { r, g, b };
+  };
+
+  const target = hexToRgb(hex);
+  let minDiff = Infinity;
+  let bestId = '7';
+
+  Object.entries(colors).forEach(([id, cHex]) => {
+    const cRgb = hexToRgb(cHex);
+    // Euclidean distance usually sufficient for simple mapping
+    const diff = Math.sqrt(
+      Math.pow(target.r - cRgb.r, 2) +
+      Math.pow(target.g - cRgb.g, 2) +
+      Math.pow(target.b - cRgb.b, 2)
+    );
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestId = id;
+    }
+  });
+
+  return bestId;
+};
+
 const Admin = () => {
   const [schedules, setSchedules] = useState([]);
   const [types, setTypes] = useState(['เลือกประเภทกิจกรรม']);
@@ -98,21 +160,77 @@ const Admin = () => {
     return opts;
   })();
 
+  const durationOptions = ['30 นาที', '1 ชั่วโมง', '1.5 ชั่วโมง', '2 ชั่วโมง', '3 ชั่วโมง'];
+
+  // --------------------------- AUTH & PROFILE ---------------------------
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const profileRef = useRef(null);
+  // const navigate = useNavigate(); // keeping getting deleted/added, careful
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const role = localStorage.getItem('sessionRole');
+      if (user && role === 'admin') {
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+        // Redirect if not authorized
+        window.location.href = '/admin-login';
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // --------------------------- FETCH DATA ---------------------------
   useEffect(() => {
-    const unsubSchedules = subscribeSchedules(setSchedules);
+    if (!currentUser) {
+      setSchedules([]);
+      setActivityTypes([]);
+      setTypes(['เลือกประเภทกิจกรรม']);
+      return;
+    }
+
+    const unsubSchedules = subscribeSchedules(setSchedules, currentUser.email);
     const unsubTypes = subscribeActivityTypes((fetchedTypes) => {
       setActivityTypes(fetchedTypes);
       setTypes(['เลือกประเภทกิจกรรม', ...fetchedTypes.map(t => t.name)]);
-    });
+    }, currentUser.email);
+
     return () => {
       unsubSchedules();
       unsubTypes();
     };
+  }, [currentUser]);
+
+  // --------------------------- SYNC BOOKINGS (Admin Calendar) - DEPRECATED (Moved to Server) ---------------------------
+  /* 
+  useEffect(() => {
+    // ... Client-side sync logic removed/commented out to prevent duplicates with server-side sync ...
+  }, [currentUser, activityTypes]);
+  */
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => { setCurrentSchedulePage(1); }, [schedules.length]);
-  useEffect(() => { setCurrentTypePage(1); }, [activityTypes.length]);
+  const handleLogoutClick = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('isAdminLoggedIn');
+      localStorage.removeItem('sessionRole'); // Clear session
+      window.location.href = '/admin-login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      setPopupMessage({ type: 'error', message: 'ออกจากระบบไม่สำเร็จ' });
+    }
+  };
 
   // --------------------------- AUTO CLOSE POPUP ---------------------------
   useEffect(() => {
@@ -186,6 +304,7 @@ const Admin = () => {
         time: `${formData.startTime} - ${formData.endTime}`,
         duration: durationValue,
         createdDate: new Date().toISOString(),
+        ownerEmail: currentUser?.email // Save Owner Email
       }));
 
       await Promise.all(newSchedules.map(s => addScheduleDoc(s)));
@@ -217,14 +336,14 @@ const Admin = () => {
     const trimmed = newType.trim();
     if (trimmed && !types.includes(trimmed)) {
       try {
-        await addActivityType(trimmed, newColor);
+        await addActivityType(trimmed, newColor, currentUser?.email);
         setFormData({ ...formData, type: trimmed });
         setNewType('');
         setNewColor('#3B82F6');
         setPopupMessage({ type: 'success', message: 'เพิ่มประเภทกิจกรรมสำเร็จ' });
       } catch (err) {
         console.error(err);
-        setPopupMessage({ type: 'error', message: 'เกิดข้อผิดพลาดในการเพิ่มประเภท' });
+        setPopupMessage({ type: 'error', message: `เกิดข้อผิดพลาด: ${err.message}` });
       }
     }
   };
@@ -318,11 +437,12 @@ const Admin = () => {
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <button
                 className="session-toggle-btn"
                 onClick={() => {
-                  const url = `${window.location.origin}/login`;
+                  const adminEmail = currentUser?.email || '';
+                  const url = `${window.location.origin}/login?admin=${encodeURIComponent(adminEmail)}`;
                   navigator.clipboard.writeText(url).then(() => {
                     setPopupMessage({ type: 'success', message: 'คัดลอกลิงก์เรียบร้อยแล้ว' });
                   }).catch(err => {
@@ -334,9 +454,74 @@ const Admin = () => {
               >
                 <span>คัดลอกลิงก์</span>
               </button>
+
+
               <button className="session-toggle-btn" onClick={() => setIsViewMode(!isViewMode)}>
                 {isViewMode ? 'กลับไปหน้าจัดการ' : 'ดูรายการกิจกรรม'}
               </button>
+
+              {/* Profile Badge */}
+              <div className="user-profile-container" ref={profileRef} style={{ position: 'relative', zIndex: 100 }}>
+                <button
+                  className="user-profile-badge"
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  style={{ position: 'relative', top: 0, right: 0, padding: 0, overflow: 'hidden', }}
+                >
+                  {currentUser && currentUser.photoURL && !imgError ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt="Profile"
+                      className="profile-avatar"
+                      style={{ width: '90%', height: '90%', objectFit: 'cover', borderRadius: '50%' }}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => setImgError(true)}
+                    />
+                  ) : (
+                    <div className="profile-avatar">
+                      {currentUser && currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'SC'}
+                    </div>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className="profile-dropdown-menu">
+                    <div className="dropdown-header-info">
+                      {currentUser && currentUser.photoURL ? (
+                        <img src={currentUser.photoURL} alt="Profile" className="profile-avatar sm" style={{ borderRadius: '50%' }} />
+                      ) : (
+                        <div className="profile-avatar sm">SC</div>
+                      )}
+                      <div className="profile-info">
+                        <span className="profile-name">{currentUser ? currentUser.displayName : 'Guest'}</span>
+                        <span className="profile-email">{currentUser ? currentUser.email : '-'}</span>
+                      </div>
+                    </div>
+
+                    <div className="dropdown-divider"></div>
+
+                    {/* 
+                    // Optional: Restore these if implementing Admin History/Settings later
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setIsViewMode(true); 
+                        setIsProfileOpen(false);
+                      }}
+                    >
+                      <History size={18} />
+                      <span>ประวัติการนัดหมาย</span>
+                    </button>
+                    */}
+
+                    <button className="dropdown-item logout" onClick={handleLogoutClick}>
+                      <LogOut size={18} />
+                      <span>ออกจากระบบ</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         </div>
@@ -554,7 +739,7 @@ const Admin = () => {
                             )}
                           </div>
                         )) : (
-                          <p className="text-center text-gray-500 py-4">ยังไม่มีกิจกรรมที่บันทึกไว้</p>
+                          <p className="empty-state">ยังไม่มีกิจกรรมที่บันทึกไว้</p>
                         )}
                       </div>
 

@@ -21,10 +21,12 @@ import {
   subscribeBookings,
   deleteBooking,
   auth,
+  userAuth, // Import User Auth
+  userDb,   // Import User DB
   messaging
 } from '../services/firebase';
 import { getToken, onMessage } from 'firebase/messaging';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth'; // Auth Listener
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase'; // Ensure db is imported
 import { useNavigate } from 'react-router-dom';
@@ -58,6 +60,7 @@ const MapPinIcon = ({ style }) => (
 );
 
 const User = () => {
+  const navigate = useNavigate(); // For redirect
   // --- STATES ---
   const [schedules, setSchedules] = useState([]);
   const [types, setTypes] = useState(['เลือกกิจกรรม']);
@@ -834,25 +837,40 @@ const User = () => {
   const availableTimeSlots = getAvailableTimeSlots();
 
   // --- EFFECTS ---
+
+  // --- EFFECTS ---
+
   useEffect(() => {
-    const unsubSchedules = subscribeSchedules(setSchedules);
+    const targetAdminEmail = sessionStorage.getItem('targetAdminEmail'); // Use sessionStorage
+
+    // Pass targetAdminEmail (if null, firebase.js query handles it by showing default/global or empty query)
+    // Pass userDb to ensure we are listening on the correct app context (if that matters for reads)
+    // Actually, reads are usually fine on default app if rules allow public read. 
+    // BUT if rules require auth, we MUST use userDb because userAuth is on userApp.
+    const unsubSchedules = subscribeSchedules(setSchedules, targetAdminEmail, userDb);
     const unsubTypes = subscribeActivityTypes((fetchedTypes) => {
       setActivityTypes(fetchedTypes);
       setTypes(['เลือกกิจกรรม', ...fetchedTypes.map(t => t.name)]);
-    });
-    const unsubBookings = subscribeBookings(setBookings);
+    }, targetAdminEmail, userDb);
+
+    const unsubBookings = subscribeBookings(setBookings, userDb);
     return () => { unsubSchedules(); unsubTypes(); unsubBookings(); };
   }, []);
 
   // Auth Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
+    const unsubscribe = onAuthStateChanged(userAuth, (user) => {
+      const role = sessionStorage.getItem('sessionRole'); // Use sessionStorage
+      if (user && role === 'user') {
         setCurrentUser(user);
         setImgError(false); // Reset error on new user
       } else {
         setCurrentUser(null);
-        // navigate('/login'); // Optional: Auto redirect if not logged in
+        // Redirect to login if not authenticated or not user role
+        // 'admin' param might be lost here if not careful, but usually it's saved in sessionStorage by UserLogin
+        // If we redirect to /login, user logs in again -> UserLogin restores admin from sessionStorage/URL?
+        // Wait, /login checks URL. SessionStorage persists. So it's fine.
+        navigate('/login', { replace: true });
       }
     });
     return () => unsubscribe();
@@ -1037,12 +1055,18 @@ const User = () => {
         description: `${formData.description || '-'}`,
         location: formData.location,
         colorId: colorId,
-        userEmail: currentUser ? currentUser.email : '' // Send User Email for Guest Sync
+        userEmail: currentUser ? currentUser.email : '', // Send User Email for Guest Sync
+        targetAdminEmail: sessionStorage.getItem('targetAdminEmail') || '' // Save Target Admin Email
       };
+
+      // Payload specifically for Google Calendar (Exclude Admin Email to prevent Invite)
+      const calendarPayload = { ...eventPayload };
+      delete calendarPayload.targetAdminEmail;
 
       setPopupMessage({ type: 'success', message: 'กำลังบันทึก...' });
 
-      const result = await createCalendarEvent(eventPayload);
+      const token = sessionStorage.getItem('googleAccessToken');
+      const result = await createCalendarEvent(calendarPayload, token);
 
       if (result.status === 'success') {
         // Save to Firestore
@@ -1053,8 +1077,9 @@ const User = () => {
           type: formData.type,
           subject: formData.subject, // Explicitly save subject
           meetingFormat: formData.meetingFormat,
-          email: currentUser ? currentUser.email : '' // Save User Email
-        });
+          email: currentUser ? currentUser.email : '', // Save User Email
+          targetAdminEmail: sessionStorage.getItem('targetAdminEmail') || '' // Save Target Admin Email
+        }, userDb);
 
         setPopupMessage({ type: 'success', message: 'จองนัดหมายและบันทึกลงปฏิทินเรียบร้อยแล้ว' });
 
@@ -1099,7 +1124,11 @@ const User = () => {
       // 2. Delete from Google Calendar if linked
       if (bookingToDelete && bookingToDelete.googleCalendarEventId) {
         try {
-          await deleteCalendarEvent(bookingToDelete.googleCalendarEventId);
+          const token = sessionStorage.getItem('googleAccessToken');
+          await deleteCalendarEvent(
+            bookingToDelete.googleCalendarEventId,
+            token
+          );
         } catch (calError) {
           console.warn("Failed to delete from Google Calendar:", calError);
           // Continue to delete from local DB even if calendar fails
@@ -1107,7 +1136,7 @@ const User = () => {
       }
 
       // 3. Delete from Firestore
-      await deleteBooking(id);
+      await deleteBooking(id, userDb);
       setPopupMessage({ type: 'success', message: 'ลบรายการเรียบร้อยแล้ว' });
     } catch (error) {
       console.error("Delete Error:", error);
@@ -1248,7 +1277,7 @@ const User = () => {
 
   // Profile Dropdown State
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const navigate = useNavigate();
+  // navigate is already defined at top scope
 
   // Logout Logic
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -1312,9 +1341,28 @@ const User = () => {
     setShowLogoutModal(true);
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
+    try {
+      await signOut(userAuth);
+      sessionStorage.removeItem('sessionRole');
+      // targetAdminEmail in sessionStorage might be kept? 
+      // If user logs out, they might still be on the same "link".
+      // But standard logout often clears session. 
+      // User requested "link contains multiple users". 
+      // If I logout, I am no longer User X.
+      // But the PAGE is still for Admin A?
+      // Yes, `sessionStorage` lifespan is until Tab close.
+      // So I should keep `targetAdminEmail` unless I want to force re-entry via link.
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
     setShowLogoutModal(false);
-    navigate('/login');
+    navigate('/login'); // Does UserLogin set targetAdminEmail AGAIN? 
+    // UserLogin only sets if ?admin=... is in search params.
+    // If I navigate('/login'), params might be lost?
+    // Wait, UserLogin has logic: check URL.
+    // If I navigate('/login'), URL is just `/login`.
+    // So session `targetAdminEmail` persists in sessionStorage which is GOOD.
   };
 
   return (

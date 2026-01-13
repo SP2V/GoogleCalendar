@@ -1,66 +1,78 @@
-
-const API_URL = 'https://script.google.com/macros/s/......./exec';
-
 /**
- * Create a new event in Google Calendar
- * @param {Object} eventData - { title, startTime, endTime, description, location, userEmail }
- * @returns {Promise<Object>} - Response from GAS
+ * Create a new event using Direct Google Calendar API
+ * @param {Object} eventData - { title, startTime, endTime, description, location, targetAdminEmail }
+ * @param {string} token - Google Access Token
  */
-export const createCalendarEvent = async (eventData) => {
+export const createCalendarEvent = async (eventData, token) => {
+  if (!token) {
+    console.error("No Access Token provided for Calendar API");
+    return { status: 'error', message: 'No Access Token' };
+  }
+
+  const event = {
+    summary: eventData.title,
+    location: eventData.location,
+    description: eventData.description,
+    start: {
+      dateTime: eventData.startTime,
+      timeZone: 'Asia/Bangkok', // Explicit Timezone
+    },
+    end: {
+      dateTime: eventData.endTime,
+      timeZone: 'Asia/Bangkok',
+    },
+    attendees: [],
+    reminders: {
+      useDefault: true,
+    },
+    colorId: eventData.colorId, // Add Color ID
+  };
+
+  // Invite Admin
+  if (eventData.targetAdminEmail) {
+    event.attendees.push({ email: eventData.targetAdminEmail });
+  }
+
   try {
-    // Google Apps Script Web App requires 'text/plain' to avoid CORS preflight issues in some cases,
-    // or simply because it parses postData.contents.
-    const response = await fetch(API_URL, {
+    const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(eventData),
+      body: JSON.stringify(event),
     });
 
-    const result = await response.json();
-    return result;
+    const data = await response.json();
+
+    if (response.ok) {
+      return { status: 'success', eventId: data.id, link: data.htmlLink };
+    } else {
+      console.error("Google API Error:", data);
+      return { status: 'error', message: data.error?.message || 'Unknown Error' };
+    }
   } catch (error) {
-    console.error("Error creating calendar event:", error);
-    throw error;
+    console.error("Network Error creating event:", error);
+    return { status: 'error', message: error.toString() };
   }
 };
 
 /**
- * Delete an event from Google Calendar
- * @param {string} eventId - Google Calendar Event ID
- * @returns {Promise<Object>} - Response from GAS
+ * Delete an event from Google Calendar via Direct API
  */
-export const deleteCalendarEvent = async (eventId) => {
+export const deleteCalendarEvent = async (eventId, token) => {
+  if (!token) return null; // Cannot delete without token
+
   try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      method: 'DELETE',
       headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
+        'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ action: 'delete', eventId: eventId }),
     });
-
-    const result = await response.json();
-    return result;
+    return { status: 'success' };
   } catch (error) {
-    console.error("Error deleting calendar event:", error);
-    // Return null instead of throwing to allow local deletion to proceed
-    return null;
-  }
-};
-
-/**
- * Get events from Google Calendar
- * @returns {Promise<Array>} - List of events
- */
-export const getCalendarEvents = async () => {
-  try {
-    const response = await fetch(API_URL);
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Error fetching calendar events:", error);
-    return [];
+    console.error("Error deleting event:", error);
+    return { status: 'error' };
   }
 };

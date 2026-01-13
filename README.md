@@ -56,110 +56,43 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-## การเปลี่ยนบัญชี Google Calendar ของ Admin / Changing Admin Calendar Account
+## การตั้งค่า Google Calendar API (OAuth 2.0)
 
-ระบบจองห้องประชุมนี้เชื่อมต่อกับ Google Calendar ผ่าน **Google Apps Script (GAS)** เพื่อให้สามารถสร้างและลบกิจกรรมในปฏิทินของ Admin ได้โดยไม่ต้องเปิดเผย Credentials ของบัญชีโดยตรง
+ระบบนี้ใช้ Google Calendar API โดยตรงผ่าน OAuth 2.0 แทนการใช้ Service Account หรือ Apps Script แบบเดิม เพื่อความปลอดภัยและสะดวกในการจัดการสิทธิ์ของ Admin
 
-หากต้องการเปลี่ยนบัญชี Gmail ที่ใช้เป็น Admin สำหรับสร้างนัดหมาย ให้ทำตามขั้นตอนดังนี้:
+### 1. สร้าง Google Cloud Project
+1. ไปที่ [Google Cloud Console](https://console.cloud.google.com/)
+2. สร้าง Project ใหม่ (หรือใช้ Project เดียวกับ Firebase ก็ได้)
+3. ไปที่เมนู **APIs & Services** > **Library**
+4. ค้นหา **"Google Calendar API"** และกด **Enable**
 
-### 1. สร้าง Google Apps Script ใหม่
-1.  ล็อกอินด้วยบัญชี Gmail ที่ต้องการใช้เป็น Admin
-2.  ไปที่ [script.google.com](https://script.google.com/) คลิก **New Project**
-3.  ลบโค้ดเดิมทั้งหมด แล้ววางโค้ดด้านล่างนี้ลงไป (เป็นโค้ดตัวอย่างสำหรับการทำงานพื้นฐาน):
+### 2. ตั้งค่า OAuth Consent Screen
+1. ไปที่เมนู **APIs & Services** > **OAuth consent screen**
+2. เลือก **External** (หรือ Internal ถ้าใช้ในองค์กร) แล้วกด Create
+3. กรอก App Information (ชื่อ App, Email Support)
+4. ในส่วน **Scopes**, กด Add Scopes และเลือก:
+   - `.../auth/calendar` (See, edit, share, and permanently delete all the calendars you can access using Google Calendar)
+   - `.../auth/userinfo.email`
+   - `.../auth/userinfo.profile`
+5. เพิ่ม **Test users** (Email ของ Admin ที่จะใช้จัดการปฏิทิน)
 
-```javascript
-/* 
-  Reference Google Apps Script for Meeting Room Booking 
-  This script acts as a Web App to interface with Google Calendar.
-*/
+### 3. สร้าง Credentials
+1. ไปที่เมนู **APIs & Services** > **Credentials**
+2. กด **Create Credentials** > **OAuth client ID**
+3. Application type เลือก **Web application**
+4. ตั้งชื่อ (เช่น `Calendar Web App`)
+5. ในส่วน **Authorized redirect URIs** ให้ใส่:
+   - `http://localhost:3000/auth/google/callback` (โปรดตรวจสอบ Port ของ Server ให้ตรงกับที่ใช้งานจริง)
+6. กด Create จะได้ **Client ID** และ **Client Secret**
 
-// Google Apps Script Code
-// แก้ไขเพื่อให้รองรับการเพิ่ม User เป็นผู้เข้าร่วม (Attendees)
+### 4. อัปเดตไฟล์ .env
+นำค่าที่ได้มาใส่ในไฟล์ `.env` ของโปรเจกต์:
 
-function doPost(e) {
-    try {
-        var data = JSON.parse(e.postData.contents);
-        var action = data.action;
-        
-        if (action === 'delete') {
-            return deleteEvent(data.eventId);
-        } else {
-            return createEvent(data);
-        }
-    } catch (error) {
-        return ContentService.createTextOutput(JSON.stringify({
-            status: 'error',
-            message: error.toString()
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
-}
-
-function createEvent(data) {
-    var calendar = CalendarApp.getCalendarById('primary'); // หรือใส่ Email ของ Admin
-    if (!calendar) {
-        throw new Error('Calendar not found');
-    }
-
-    var startTime = new Date(data.startTime);
-    var endTime = new Date(data.endTime);
-
-    // --- ส่วนที่แก้ไข: เพิ่ม guests และ sendInvites ---
-    var options = {
-        description: data.description || '',
-        location: data.location || '',
-        guests: data.userEmail || '', // อีเมลของ User ที่ส่งมาจาก Frontend
-        sendInvites: true             // ส่งอีเมลเชิญเพื่อให้ Sync ลงปฏิทินของ User อัตโนมัติ
-    };
-    // -------------------------------------------
-
-    var event = calendar.createEvent(data.title, startTime, endTime, options);
-
-    // กำหนดสีถ้ามีการส่งมา
-    if (data.colorId) {
-        event.setColor(data.colorId);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({
-        status: 'success',
-        eventId: event.getId()
-    })).setMimeType(ContentService.MimeType.JSON);
-}
-
-function deleteEvent(eventId) {
-    var calendar = CalendarApp.getCalendarById('primary');
-    var event = calendar.getEventById(eventId);
-    if (event) {
-        event.deleteEvent();
-        return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))
-            .setMimeType(ContentService.MimeType.JSON);
-    } else {
-        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Event not found' }))
-            .setMimeType(ContentService.MimeType.JSON);
-    }
-}
-
-function doGet(e) {
-    return ContentService.createTextOutput("Calendar API is active with Attendee Support");
-}
+```env
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+REDIRECT_URI=http://localhost:3000/auth/google/callback
 ```
-
-### 2. ทำการ Deploy เป็น Web App
-1.  คลิกปุ่ม **Deploy** (สีน้ำเงินมุมขวาบน) > **New deployment**
-2.  เลือก type เป็น **Web app** (รูปเฟือง)
-3.  ตั้งค่าดังนี้:
-    -   **Description**: (ตั้งชื่ออะไรก็ได้ เช่น "Calendar API")
-    -   **Execute as**: **Me** (บัญชีของคุณ - สำคัญมาก!)
-    -   **Who has access**: **Anyone** (เพื่อให้ Application เรียกใช้งานได้)
-4.  คลิก **Deploy**
-5.  คัดลอก **Web app URL** (ลิงก์ยาวๆ ที่ลงท้ายด้วย `/exec`)
-
-### 3. อัปเดต URL ในโปรเจกต์
-1.  เปิดไฟล์ `src/services/calendarService.js`
-2.  แก้ไขตัวแปร `API_URL` ให้เป็น URL ใหม่ที่ได้มา:
-    ```javascript
-    const API_URL = 'https://script.google.com/macros/s/......./exec';
-    ```
-3.  บันทึกไฟล์และทดสอบการจอง
 
 ## การตั้งค่า Firebase / Firebase Configuration
 
@@ -211,6 +144,8 @@ function doGet(e) {
 
 ### 2. ไฟล์ .env (ถ้ามี)
 ตรวจสอบการตั้งค่า Environment Variables หากจำเป็น
+- **GOOGLE_CLIENT_ID**: จาก Google Cloud Console
+- **GOOGLE_CLIENT_SECRET**: จาก Google Cloud Console
 
 ### 3. ไฟล์ .firebaserc
 เปลี่ยนค่า 
@@ -232,7 +167,7 @@ function doGet(e) {
 - **ขณะปิดหน้าเว็บ**: `server.js` จะคอยเช็คเวลาจาก Database และส่ง Notification ผ่าน Firebase Cloud Messaging (FCM) ไปยัง Service Worker (`firebase-messaging-sw.js`)
 
 ### การเปลี่ยนบัญชี Google Calendar
-ดูรายละเอียดในโค้ด `src/services/calendarService.js` และ Google Apps Script ที่เกี่ยวข้อง (URL มาจาก GAS Web App)
+ใช้ระบบ OAuth 2.0 (ล็อกอินผ่านหน้า Admin) โดยค่า Token จะถูกเก็บลงใน Firebase Firestore (`systemConfig/adminSettings`) เพื่อให้ Server นำไปใช้งานต่อ (Offline Access)
 
 ### Firebase Config
 ตั้งค่าที่ `src/services/firebase.js`

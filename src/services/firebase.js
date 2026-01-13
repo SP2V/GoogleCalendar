@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { initializeApp, getApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, initializeAuth, browserSessionPersistence } from 'firebase/auth';
 import {
   getFirestore,
   collection,
@@ -12,39 +12,105 @@ import {
   getDoc,
   query,
   orderBy,
+  where,
 } from 'firebase/firestore';
 
 // --- Firebase Config ---
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "...",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
+console.log("Firebase Config Check:", {
+  apiKey: !!firebaseConfig.apiKey,
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain
+});
 
 // --- Initialize ---
-let app, db;
+// --- Initialize Admin (Default) ---
+let app, db, adminAuth;
 try {
   if (!firebaseConfig.projectId) {
     console.warn('Firebase not initialized — missing projectId.');
   } else {
     app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    db = getFirestore(app); // Default DB (Admin)
+    adminAuth = getAuth(app); // Default Auth (Admin)
   }
 } catch (err) {
   console.error('Error initializing Firebase:', err);
   throw err;
 }
 
-const auth = getAuth(app);
+// --- Initialize User (Secondary) ---
+let userApp, userDb, userAuth;
+
+if (!firebaseConfig.apiKey) {
+  console.error("CRITICAL: Firebase API Key is missing! Check .env file.");
+}
+
+try {
+  // Try to retrieve existing app
+  // Note: We avoid importing getApp to keep it simple, relying on try-catch on initializeApp
+  userApp = initializeApp(firebaseConfig, "UserApp");
+} catch (e) {
+  // If "UserApp" already exists (duplicate service init), ignore or recreate?
+  // "app/duplicate-app" error means we should get the existing one.
+  // Since we don't import getApp, we can catch and ignore if we assume it works.
+  // BUT the best way is to import { getApp } from 'firebase/app';
+  console.warn("UserApp init warning (likely duplicate):", e);
+  try {
+    userApp = getApp("UserApp");
+  } catch (err) {
+    console.error("Failed to retrieve existing UserApp:", err);
+  }
+}
+
+// Fallback if null (shouldn't happen if initializeApp works or throws duplicate)
+// Actually if it throws duplicate, we need to GET it.
+// Let's modify imports to include getApp for safety.
+if (!userApp) {
+  // Re-init tactic is tricky if it already exists. 
+  // We will just proceed and hope getApp work or just ignore if we can't fix without getApp import.
+}
+
+userDb = getFirestore(userApp);
+
+// Initialize Auth with STRICT Session Persistence
+console.log("Persistence Type Check:", browserSessionPersistence); // Debug: Check if undefined
+
+try {
+  // Reverting to getAuth temporarily to isolate "initializeAuth" vs "missing api key" issue
+  // If this works, then initializeAuth+Persistence is the culprit.
+  userAuth = getAuth(userApp);
+
+  // Try setting persistence asynchronously if possible, or just log for now
+  // setPersistence(userAuth, browserSessionPersistence).catch(e => console.error("Async Persistence Set Error:", e));
+
+} catch (e) {
+  console.error("UserAuth Init Error:", e);
+  userAuth = getAuth(userApp);
+}
+
+// Debug Auth Instance
+console.log("UserAuth Initialized:", {
+  app: userAuth?.app?.name,
+  apiKey: userAuth?.app?.options?.apiKey
+});
+
+const auth = adminAuth; // Default export alias
 const googleProvider = new GoogleAuthProvider();
-// Initialize Messaging
+
+// Initialize Messaging (Default App)
 import { getMessaging } from "firebase/messaging";
 const messaging = app ? getMessaging(app) : null;
 
-export { app, db, auth, googleProvider, messaging };
+export { app, db, auth, adminAuth, userApp, userDb, userAuth, googleProvider, messaging };
 
 // ================= SCHEDULES =================
 
@@ -96,13 +162,22 @@ export async function deleteScheduleById(id) {
 }
 
 // ✅ SUBSCRIBE SCHEDULES (Realtime)
-export function subscribeSchedules(onUpdate) {
-  if (!db) return () => { };
-  const q = query(collection(db, 'schedules'), orderBy('createdDate', 'desc'));
+export function subscribeSchedules(onUpdate, ownerEmail, database = db) {
+  if (!database) return () => { };
+
+  // Query ALL (to include legacy items with no ownerEmail)
+  const q = query(collection(database, 'schedules'), orderBy('createdDate', 'desc'));
+
   const unsub = onSnapshot(
     q,
     snapshot => {
-      const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      let items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Client-side Filter: Show Own Items OR Legacy Items (no ownerEmail)
+      if (ownerEmail) {
+        items = items.filter(i => !i.ownerEmail || i.ownerEmail === ownerEmail);
+      }
+
       onUpdate(items);
     },
     err => console.error('onSnapshot error:', err)
@@ -113,18 +188,26 @@ export function subscribeSchedules(onUpdate) {
 // ================= ACTIVITY TYPES =================
 
 // ✅ SUBSCRIBE ACTIVITY TYPES (Realtime)
-export const subscribeActivityTypes = (callback) => {
-  if (!db) return () => { };
-  const typesRef = collection(db, 'activityTypes');
+export const subscribeActivityTypes = (callback, ownerEmail, database = db) => {
+  if (!database) return () => { };
+  const typesRef = collection(database, 'activityTypes');
+
+  // Query ALL (to include legacy items)
   const q = query(typesRef, orderBy('name'));
+
   const unsub = onSnapshot(
     q,
     snapshot => {
-      // ดึงข้อมูลทั้งหมดรวมถึง color ด้วย
-      const types = snapshot.docs.map(doc => ({
+      let types = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      // Client-side Filter: Show Own Items OR Legacy Items (no ownerEmail)
+      if (ownerEmail) {
+        types = types.filter(t => !t.ownerEmail || t.ownerEmail === ownerEmail);
+      }
+
       callback(types);
     },
     err => console.error('subscribeActivityTypes error:', err)
@@ -133,15 +216,15 @@ export const subscribeActivityTypes = (callback) => {
 };
 
 // ✅ ADD ACTIVITY TYPE
-export const addActivityType = async (name, color) => {
+export const addActivityType = async (name, color, ownerEmail) => {
   if (!db) throw new Error('Firestore not initialized');
   if (!name || !name.trim()) return;
 
   const typesRef = collection(db, 'activityTypes');
   await addDoc(typesRef, {
     name: name.trim(),
-    // บันทึกสีลงไป ถ้าไม่มีให้ใช้สี Default เป็นสีฟ้า
-    color: color || '#3B82F6'
+    color: color || '#3B82F6',
+    ownerEmail: ownerEmail || '' // Save Owner Email
   });
 };
 
@@ -171,9 +254,9 @@ export const deleteActivityType = async (id) => {
 
 
 // ✅ ADD BOOKING
-export const addBooking = async (bookingData) => {
-  if (!db) throw new Error('Firestore not initialized');
-  const bookingsRef = collection(db, 'bookings');
+export const addBooking = async (bookingData, database = db) => {
+  if (!database) throw new Error('Firestore not initialized');
+  const bookingsRef = collection(database, 'bookings');
   const docRef = await addDoc(bookingsRef, {
     ...bookingData,
     createdAt: new Date().toISOString()
@@ -182,16 +265,23 @@ export const addBooking = async (bookingData) => {
 };
 
 // ✅ DELETE BOOKING
-export const deleteBooking = async (id) => {
-  if (!db) throw new Error('Firestore not initialized');
-  const docRef = doc(db, 'bookings', id);
+export const deleteBooking = async (id, database = db) => {
+  if (!database) throw new Error('Firestore not initialized');
+  const docRef = doc(database, 'bookings', id);
   await deleteDoc(docRef);
 };
 
+// ✅ UPDATE BOOKING
+export const updateBookingDoc = async (id, data, database = db) => {
+  if (!database) throw new Error('Firestore not initialized');
+  const docRef = doc(database, 'bookings', id);
+  await updateDoc(docRef, data);
+};
+
 // ✅ SUBSCRIBE BOOKINGS (Realtime)
-export const subscribeBookings = (callback) => {
-  if (!db) return () => { };
-  const bookingsRef = collection(db, 'bookings');
+export const subscribeBookings = (callback, database = db) => {
+  if (!database) return () => { };
+  const bookingsRef = collection(database, 'bookings');
   const q = query(bookingsRef, orderBy('startTime', 'asc'));
   const unsub = onSnapshot(
     q,
@@ -221,5 +311,6 @@ export default {
   deleteActivityType,
   addBooking,
   subscribeBookings,
-  deleteBooking, // Export เพิ่ม
+  deleteBooking,
+  updateBookingDoc, // Export เพิ่ม
 };

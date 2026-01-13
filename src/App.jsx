@@ -7,6 +7,8 @@ import Admin from './pages/Admin'
 // นำเข้า User component สำหรับหน้า User
 import User from './pages/User'
 import Login from './pages/Login'
+import AdminLogin from './pages/AdminLogin'
+import UserLogin from './pages/UserLogin'
 // นำเข้า CSS สำหรับ App component
 import './App.css'
 
@@ -23,10 +25,13 @@ function App() {
       {/* กำหนด Routes สำหรับการนำทางระหว่างหน้า */}
       <Routes>
         {/* Route หลัก (/) จะ redirect ไปที่หน้า Login แทน User */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/admin-login" replace />} />
 
         {/* Route สำหรับหน้า Login */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<UserLogin />} />
+
+        {/* Route สำหรับหน้า Admin Login */}
+        <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* Route สำหรับหน้า User */}
         <Route path="/user" element={<User />} />

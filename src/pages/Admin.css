@@ -42,6 +42,7 @@
 .header-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
 }
 
@@ -922,14 +923,16 @@
 
 /* ปุ่มสลับโหมด */
 .session-toggle-btn {
+  height: 37px;
   background: #3b82f6;
-  color: white;
-  border: none;
+  color: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: all 0.2s;
+  font-family: 'Kanit', sans-serif;
 }
 
 .session-toggle-btn:hover {
