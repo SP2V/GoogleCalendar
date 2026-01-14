@@ -58,7 +58,7 @@ const oauth2Client = new google.auth.OAuth2(
 app.get('/auth/google', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline', // Critical for receiving refresh_token
-        prompt: 'select_account', // Allow account selection, do NOT force consent every time
+        prompt: 'consent', // Force consent to ALWAYS get a refresh_token for storage logic
         scope: [
             'https://www.googleapis.com/auth/calendar',
             'https://www.googleapis.com/auth/userinfo.email',
@@ -85,13 +85,34 @@ app.get('/auth/google/callback', async (req, res) => {
         console.log(`✅ OAuth Success for: ${email}`);
 
         // 2. Store Refresh Token (For Admin Sync - Assuming this login IS the Admin)
+        // 2. Store Refresh Token (Append to accounts list)
         if (tokens.refresh_token) {
-            await db.collection('systemConfig').doc('adminSettings').set({
+            const adminRef = db.collection('systemConfig').doc('adminSettings');
+            const doc = await adminRef.get();
+            let accounts = [];
+            if (doc.exists && doc.data().accounts) {
+                accounts = doc.data().accounts;
+            } else if (doc.exists && doc.data().refresh_token) {
+                // Migrate legacy single account
+                accounts.push({
+                    email: doc.data().adminEmail,
+                    refresh_token: doc.data().refresh_token,
+                    updatedAt: doc.data().updatedAt
+                });
+            }
+
+            // Remove existing entry for this email if it exists (to update it)
+            accounts = accounts.filter(acc => acc.email !== email);
+
+            // Add new/updated account
+            accounts.push({
+                email: email,
                 refresh_token: tokens.refresh_token,
-                adminEmail: email,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            console.log('   ✅ Refresh Token stored/updated.');
+                updatedAt: new Date().toISOString()
+            });
+
+            await adminRef.set({ accounts }, { merge: true });
+            console.log(`   ✅ Account ${email} stored/updated in adminSettings.`);
         }
 
         // 3. Mint Firebase Custom Token for Frontend Login
@@ -326,14 +347,32 @@ const mapHexToGoogleColorId = (hex) => {
 };
 
 // Helper: Ensure we have valid credentials
-async function ensureAuth() {
+// Helper: Get all admin accounts
+async function getAdminAccounts() {
     const configDoc = await db.collection('systemConfig').doc('adminSettings').get();
-    if (!configDoc.exists || !configDoc.data().refresh_token) {
-        throw new Error('No Admin Refresh Token found');
+    if (!configDoc.exists) return [];
+
+    let accounts = configDoc.data().accounts || [];
+
+    // Fallback for legacy single account structure
+    if (accounts.length === 0 && configDoc.data().refresh_token) {
+        accounts.push({
+            email: configDoc.data().adminEmail,
+            refresh_token: configDoc.data().refresh_token
+        });
     }
-    const refreshToken = configDoc.data().refresh_token;
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
-    return google.calendar({ version: 'v3', auth: oauth2Client });
+    return accounts;
+}
+
+// Helper: Get Google Calendar Client for a specific refresh token
+function getCalendarClient(refreshToken) {
+    const client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.REDIRECT_URI || 'http://localhost:3000/auth/google/callback'
+    );
+    client.setCredentials({ refresh_token: refreshToken });
+    return google.calendar({ version: 'v3', auth: client });
 }
 
 // Helper: Get Activity Colors
@@ -349,16 +388,18 @@ async function getActivityColors() {
 
 // Function to Update an Existing Event
 async function updateGoogleCalendarEvent(bookingId, bookingData) {
-    if (!bookingData.googleCalendarEventId_Admin) return;
+    // Handle both legacy string ID and new Map ID
+    const eventIdsMap = bookingData.adminEventIds || {};
+
+    const accounts = await getAdminAccounts();
+    if (accounts.length === 0) return;
 
     try {
-        const calendar = await ensureAuth();
         const activityColors = await getActivityColors();
-
         const typeColor = activityColors[bookingData.type];
         const colorId = mapHexToGoogleColorId(typeColor);
 
-        const event = {
+        const eventBody = {
             summary: bookingData.title || bookingData.subject,
             description: `${bookingData.description || ''}\n\n(Booked by: ${bookingData.userName || 'User'})`,
             start: { dateTime: bookingData.startTime, timeZone: 'Asia/Bangkok' },
@@ -367,27 +408,47 @@ async function updateGoogleCalendarEvent(bookingId, bookingData) {
             colorId: colorId
         };
 
-        await calendar.events.patch({
-            calendarId: 'primary',
-            eventId: bookingData.googleCalendarEventId_Admin,
-            resource: event
-        });
+        for (const account of accounts) {
+            let eventId = eventIdsMap[account.email];
 
-        console.log(`      ✏️ Updated Google Event for Booking ${bookingId}`);
+            // Legacy Fallback
+            if (!eventId && bookingData.googleCalendarEventId_Admin && accounts.length === 1) {
+                eventId = bookingData.googleCalendarEventId_Admin;
+            }
+
+            if (eventId) {
+                try {
+                    const calendar = getCalendarClient(account.refresh_token);
+                    await calendar.events.patch({
+                        calendarId: 'primary',
+                        eventId: eventId,
+                        resource: eventBody
+                    });
+                    console.log(`      ✏️ Updated Google Event for ${account.email} (Booking ${bookingId})`);
+                } catch (err) {
+                    console.error(`      ❌ Failed to update event for ${account.email}:`, err.message);
+                }
+            }
+        }
 
     } catch (error) {
-        console.error(`      ❌ Failed to update Google Event for Booking ${bookingId}:`, error.message);
+        console.error(`      ❌ Failed to update Google Events for Booking ${bookingId}:`, error.message);
     }
 }
 
 async function syncBookingsToAdminCalendar() {
     console.log(`[${new Date().toISOString()}] 🔄 Starting Sync Bookings...`);
     try {
-        const calendar = await ensureAuth();
+        const accounts = await getAdminAccounts();
+        if (accounts.length === 0) {
+            console.log('   ⚠️ No admin accounts connected.');
+            return;
+        }
+
         const activityColors = await getActivityColors();
 
-        // 3. Find Bookings to Sync (Confirmed + Missing googleCalendarEventId_Admin)
-        // Note: Ideally use a composite index, but for now fetching 'confirmed' and filtering is safer for undefined field.
+        // 3. Find Bookings to Sync 
+        // We check confirmed bookings and verify if they have events for all connected accounts.
         const bookingsSnapshot = await db.collection('bookings')
             .where('status', '==', 'confirmed')
             .get();
@@ -395,13 +456,33 @@ async function syncBookingsToAdminCalendar() {
         const bookingsToSync = [];
         bookingsSnapshot.forEach(doc => {
             const data = doc.data();
-            if (!data.googleCalendarEventId_Admin) {
-                bookingsToSync.push({ id: doc.id, ...data });
+            const eventIdsMap = data.adminEventIds || {};
+
+            // Legacy adjustment
+            if (data.googleCalendarEventId_Admin && Object.keys(eventIdsMap).length === 0 && accounts.length > 0) {
+                eventIdsMap[accounts[0].email] = data.googleCalendarEventId_Admin;
+            }
+
+            // Check if any account is missing
+            let missingAccounts = accounts.filter(acc => !eventIdsMap[acc.email]);
+
+            // [NEW] If targetAdminEmail is specified, ONLY sync to that admin
+            if (data.targetAdminEmail) {
+                missingAccounts = missingAccounts.filter(acc => acc.email === data.targetAdminEmail);
+            }
+
+            if (missingAccounts.length > 0) {
+                bookingsToSync.push({
+                    id: doc.id,
+                    ...data,
+                    existingMap: eventIdsMap,
+                    missingAccounts
+                });
             }
         });
 
         if (bookingsToSync.length === 0) {
-            console.log('   ✅ No new bookings to sync.');
+            console.log('   ✅ No bookings need syncing.');
             return;
         }
 
@@ -409,34 +490,46 @@ async function syncBookingsToAdminCalendar() {
 
         // 4. Sync Each Booking
         for (const booking of bookingsToSync) {
-            try {
-                // Determine Color
-                const typeColor = activityColors[booking.type];
-                const colorId = mapHexToGoogleColorId(typeColor);
+            const typeColor = activityColors[booking.type];
+            const colorId = mapHexToGoogleColorId(typeColor);
 
-                const event = {
-                    summary: booking.title || booking.subject,
-                    description: `${booking.description || ''}\n\n(Booked by: ${booking.userName || 'User'})`,
-                    start: { dateTime: booking.startTime, timeZone: 'Asia/Bangkok' }, // Ensure ISO string
-                    end: { dateTime: booking.endTime, timeZone: 'Asia/Bangkok' },
-                    location: booking.location,
-                    colorId: colorId
-                };
+            const eventBody = {
+                summary: booking.title || booking.subject,
+                description: `${booking.description || ''}\n\n(Booked by: ${booking.userName || 'User'})`,
+                start: { dateTime: booking.startTime, timeZone: 'Asia/Bangkok' },
+                end: { dateTime: booking.endTime, timeZone: 'Asia/Bangkok' },
+                location: booking.location,
+                colorId: colorId
+            };
 
-                const response = await calendar.events.insert({
-                    calendarId: 'primary',
-                    resource: event,
-                });
+            const updatedMap = { ...booking.existingMap };
+            let mapChanged = false;
 
-                console.log(`      ✅ Synced booking ${booking.id} -> Event ID: ${response.data.id}`);
+            for (const account of booking.missingAccounts) {
+                try {
+                    console.log(`      Syncing booking ${booking.id} to ${account.email}...`);
+                    const calendar = getCalendarClient(account.refresh_token);
 
-                // Update Firestore
+                    const response = await calendar.events.insert({
+                        calendarId: 'primary',
+                        resource: eventBody,
+                    });
+
+                    updatedMap[account.email] = response.data.id;
+                    mapChanged = true;
+                    console.log(`      ✅ Created Event ID: ${response.data.id}`);
+
+                } catch (err) {
+                    console.error(`      ❌ Failed to sync to ${account.email}:`, err.message);
+                }
+            }
+
+            if (mapChanged) {
                 await db.collection('bookings').doc(booking.id).update({
-                    googleCalendarEventId_Admin: response.data.id
+                    adminEventIds: updatedMap,
+                    // Keep legacy field updated with the FIRST account's ID just in case
+                    googleCalendarEventId_Admin: Object.values(updatedMap)[0]
                 });
-
-            } catch (err) {
-                console.error(`      ❌ Failed to sync booking ${booking.id}:`, err.message);
             }
         }
 
@@ -446,18 +539,46 @@ async function syncBookingsToAdminCalendar() {
 }
 
 // Function to Delete an Event
-async function deleteGoogleCalendarEvent(bookingId, googleCalendarEventId) {
-    if (!googleCalendarEventId) return;
+async function deleteGoogleCalendarEvents(bookingId, bookingData) {
+    const eventIdsMap = bookingData.adminEventIds || {};
 
-    try {
-        const calendar = await ensureAuth();
-        await calendar.events.delete({
-            calendarId: 'primary',
-            eventId: googleCalendarEventId
-        });
-        console.log(`      🗑️ Deleted Google Event for Booking ${bookingId}`);
-    } catch (error) {
-        console.error(`      ❌ Failed to delete Google Event for Booking ${bookingId}:`, error.message);
+    // Fallback for legacy
+    if (Object.keys(eventIdsMap).length === 0 && bookingData.googleCalendarEventId_Admin) {
+        const accounts = await getAdminAccounts();
+        for (const account of accounts) {
+            try {
+                const calendar = getCalendarClient(account.refresh_token);
+                await calendar.events.delete({
+                    calendarId: 'primary',
+                    eventId: bookingData.googleCalendarEventId_Admin
+                });
+                console.log(`      🗑️ Deleted Legacy Google Event from ${account.email} (Booking ${bookingId})`);
+            } catch (error) {
+                if (error.code !== 404 && error.code !== 410) {
+                    console.error(`      ⚠️ Failed to delete legacy event from ${account.email}:`, error.message);
+                }
+            }
+        }
+        return;
+    }
+
+    const accounts = await getAdminAccounts();
+    for (const account of accounts) {
+        const eventId = eventIdsMap[account.email];
+        if (eventId) {
+            try {
+                const calendar = getCalendarClient(account.refresh_token);
+                await calendar.events.delete({
+                    calendarId: 'primary',
+                    eventId: eventId
+                });
+                console.log(`      🗑️ Deleted Google Event from ${account.email} (Booking ${bookingId})`);
+            } catch (error) {
+                if (error.code !== 404 && error.code !== 410) {
+                    console.error(`      ❌ Failed to delete event from ${account.email}:`, error.message);
+                }
+            }
+        }
     }
 }
 
@@ -481,26 +602,16 @@ function setupRealtimeSync() {
             const bookingId = change.doc.id;
 
             if (change.type === 'added') {
-                if (!data.googleCalendarEventId_Admin) {
-                    console.log(`🔔 New Booking detected: ${bookingId}, triggering Sync...`);
-                    syncBookingsToAdminCalendar();
-                }
+                console.log(`🔔 New Booking detected: ${bookingId}, triggering Sync...`);
+                syncBookingsToAdminCalendar();
             }
             else if (change.type === 'modified') {
-                if (data.googleCalendarEventId_Admin) {
-                    console.log(`🔔 Modified Booking detected: ${bookingId}, Update Google Calendar...`);
-                    updateGoogleCalendarEvent(bookingId, data);
-                } else {
-                    // Became confirmed but no ID yet? Sync it.
-                    console.log(`🔔 Modified Booking detected (Now Confirmed): ${bookingId}, triggering Sync...`);
-                    syncBookingsToAdminCalendar();
-                }
+                console.log(`🔔 Modified Booking detected: ${bookingId}, Update Google Calendar...`);
+                updateGoogleCalendarEvent(bookingId, data);
             }
             else if (change.type === 'removed') {
                 console.log(`🔔 Booking Removed: ${bookingId}`);
-                if (data.googleCalendarEventId_Admin) {
-                    deleteGoogleCalendarEvent(bookingId, data.googleCalendarEventId_Admin);
-                }
+                deleteGoogleCalendarEvents(bookingId, data);
             }
         });
     }, err => {

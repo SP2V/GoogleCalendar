@@ -3,7 +3,11 @@ import './Admin.css';
 import TimeDropdown from "../components/AdminDropdown";
 import PopupModal from "../components/PopupModal";
 import ErrorPopup from "../components/ErrorPopup";
+import { useNavigate } from 'react-router-dom';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'; // Added
 import {
+  auth,
+  db,
   subscribeSchedules,
   addScheduleDoc,
   deleteScheduleById,
@@ -14,11 +18,10 @@ import {
   deleteActivityType,
   subscribeBookings,   // Import for Sync
   updateBookingDoc,    // Import for Sync
-  auth
 } from '../services/firebase';
 import { createCalendarEvent } from '../services/calendarService'; // Import Calendar Service
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { History, LogOut, AlarmClock } from 'lucide-react';
+import { History, LogOut, AlarmClock, Calendar as LucideCalendar, Clock, Trash2, Edit2, X, ChevronLeft, ChevronRight, Settings, UserPlus } from 'lucide-react';
 import { TbTimezone } from "react-icons/tb";
 
 
@@ -148,6 +151,10 @@ const Admin = () => {
   const itemsPerPageRight = 5;
   const [popupMessage, setPopupMessage] = useState({ type: '', message: '' });
 
+  // Admin Accounts Management
+  const [adminAccounts, setAdminAccounts] = useState([]);
+  const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
+
   const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 
   const timeOptions = (() => {
@@ -241,6 +248,53 @@ const Admin = () => {
       return () => clearTimeout(timer);
     }
   }, [popupMessage]);
+
+  // --------------------------- FETCH ADMIN ACCOUNTS ---------------------------
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Subscribe to adminSettings to get list of synchronized accounts
+    const settingsRef = doc(db, 'systemConfig', 'adminSettings');
+    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        let accounts = data.accounts || [];
+
+        // Fallback for legacy single account
+        if (accounts.length === 0 && data.refresh_token) {
+          accounts.push({
+            email: data.adminEmail,
+            refresh_token: data.refresh_token
+          });
+        }
+        setAdminAccounts(accounts);
+      }
+    }, (error) => {
+      console.error("Error fetching admin accounts:", error);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const handleDisconnectAccount = async (emailToRemove) => {
+    if (!window.confirm(`ต้องการยกเลิกการเชื่อมต่อกับบัญชี ${emailToRemove} ใช่หรือไม่?`)) return;
+
+    try {
+      const newAccounts = adminAccounts.filter(acc => acc.email !== emailToRemove);
+      await updateDoc(doc(db, 'systemConfig', 'adminSettings'), {
+        accounts: newAccounts
+      });
+      setPopupMessage({ type: 'success', message: 'ยกเลิกการเชื่อมต่อบัญชีสำเร็จ' });
+    } catch (error) {
+      console.error("Error disconnecting account:", error);
+      setPopupMessage({ type: 'error', message: 'เกิดข้อผิดพลาดในการยกเลิกบัญชี' });
+    }
+  };
+
+  const handleConnectNewAccount = () => {
+    // Redirect to server auth flow
+    window.location.href = 'http://localhost:3000/auth/google';
+  };
 
   // --------------------------- VALIDATION ---------------------------
   const validateForm = () => {
@@ -513,6 +567,11 @@ const Admin = () => {
                       <span>ประวัติการนัดหมาย</span>
                     </button>
                     */}
+
+                    <button className="dropdown-item" onClick={() => { setIsAccountsModalOpen(true); setIsProfileOpen(false); }}>
+                      <Settings size={18} />
+                      <span>จัดการบัญชีที่เชื่อมต่อ</span>
+                    </button>
 
                     <button className="dropdown-item logout" onClick={handleLogoutClick}>
                       <LogOut size={18} />
@@ -927,6 +986,99 @@ const Admin = () => {
           message={popupMessage.message}
           onClose={() => setPopupMessage({ type: '', message: '' })}
         />
+      )}
+      {/* ACCOUNTS MANAGEMENT MODAL */}
+      {isAccountsModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">บัญชี Google Calendar ที่เชื่อมต่อ</h3>
+              <button className="close-button" onClick={() => setIsAccountsModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
+                รายการบัญชีที่ระบบจะทำการซิงค์กิจกรรมลงใน Google Calendar
+              </p>
+
+              <div className="accounts-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {adminAccounts.map((acc, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '32px', height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '14px', fontWeight: 'bold'
+                      }}>
+                        {acc.email.charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: '0.95rem', color: '#1e293b' }}>{acc.email}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDisconnectAccount(acc.email)}
+                      style={{
+                        padding: '6px',
+                        color: '#ef4444',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        display: 'flex', alignItems: 'center'
+                      }}
+                      title="ยกเลิกการเชื่อมต่อ"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+
+                {adminAccounts.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                    ยังไม่มีบัญชีที่เชื่อมต่อ
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleConnectNewAccount}
+                style={{
+                  width: '100%',
+                  marginTop: '20px',
+                  padding: '12px',
+                  backgroundColor: 'white',
+                  border: '1px dashed #3b82f6',
+                  color: '#3b82f6',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                <UserPlus size={18} />
+                <span>เชื่อมต่อบัญชีเพิ่ม</span>
+              </button>
+
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
