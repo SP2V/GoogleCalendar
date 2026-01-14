@@ -568,10 +568,10 @@ const Admin = () => {
                     </button>
                     */}
 
-                    <button className="dropdown-item" onClick={() => { setIsAccountsModalOpen(true); setIsProfileOpen(false); }}>
+                    {/* <button className="dropdown-item" onClick={() => { setIsAccountsModalOpen(true); setIsProfileOpen(false); }}>
                       <Settings size={18} />
                       <span>จัดการบัญชีที่เชื่อมต่อ</span>
-                    </button>
+                    </button> */}
 
                     <button className="dropdown-item logout" onClick={handleLogoutClick}>
                       <LogOut size={18} />

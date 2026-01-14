@@ -58,7 +58,7 @@ const oauth2Client = new google.auth.OAuth2(
 app.get('/auth/google', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline', // Critical for receiving refresh_token
-        prompt: 'consent', // Force consent to ALWAYS get a refresh_token for storage logic
+        prompt: 'select_account', // Allow selecting account, only asks consent if needed
         scope: [
             'https://www.googleapis.com/auth/calendar',
             'https://www.googleapis.com/auth/userinfo.email',
